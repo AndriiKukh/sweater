@@ -1,6 +1,6 @@
 package com.example.sweater.controller;
 
-import com.example.sweater.AmazonS3.S3Services;
+import com.example.sweater.AmazonS3.AmazonS3ClientService;
 import com.example.sweater.domain.Message;
 import com.example.sweater.domain.User;
 import com.example.sweater.repos.MessageRepo;
@@ -13,9 +13,11 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import spark.utils.StringUtils;
 
 import javax.validation.Valid;
 import java.io.File;
@@ -34,11 +36,7 @@ public class MainController {
     @Autowired
     private MessageService messageService;
     @Autowired
-    private S3Services s3Services;
-    @Value("${jsa.s3.uploadfile}")
-    private String uploadFilePath;
-    @Value("${jsa.s3.key}")
-    private String downloadKey;
+    private AmazonS3ClientService amazonS3ClientService;
 
     @GetMapping("/")
     public String greeting(){
@@ -66,28 +64,16 @@ public class MainController {
             @Valid Message message,
             BindingResult bindingResult,
             Model model,
-            @RequestParam("file") MultipartFile file) throws IOException {
+            @RequestParam(value = "file") MultipartFile file) throws IOException {
                 message.setAuthor(user);
 
                 if(bindingResult.hasErrors()){
                     Map<String, String> errorsMap = ControllerUtils.getErrors(bindingResult);
-
                     model.mergeAttributes(errorsMap);
                     model.addAttribute("message", message);
+
                 }else {
-                    if (file != null && !file.getOriginalFilename().isEmpty()) {
-                        File uploadDir = new File(uploadPath);
-
-                        if (!uploadDir.exists()) {
-                            uploadDir.mkdir();
-                        }
-
-                        String uuidFile = UUID.randomUUID().toString();
-                        String resultFilename = uuidFile + "." + file.getOriginalFilename();
-
-                        file.transferTo(new File(uploadPath + "/" + resultFilename));
-                        message.setFilename(resultFilename);
-                    }
+                    saveFile(message, file);
 
                     model.addAttribute("message", null);
                     messageRepo.save(message);
@@ -96,5 +82,62 @@ public class MainController {
         List<Message> messageList = messageService.sortMessage(messages);
         model.addAttribute("messages", messageList);
         return "main";
+    }
+
+    private void saveFile(@Valid Message message, @RequestParam("file") MultipartFile file) throws IOException {
+        if (file != null && !file.getOriginalFilename().isEmpty()) {
+            File uploadDir = new File(uploadPath);
+            if (!uploadDir.exists()) {
+                uploadDir.mkdir();
+            }
+
+            String uuidFile = UUID.randomUUID().toString();
+            String resultFilename = uuidFile + "." + file.getOriginalFilename();
+            file.transferTo(new File(uploadPath + "/" + resultFilename));
+            //this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
+
+            message.setFilename(resultFilename);
+        }
+    }
+
+    @GetMapping("/user-messages/{user}")
+    public String userMessages(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable User user,
+            Model model,
+            @RequestParam(required = false) Message message
+    ){
+        List<Message> messages = messageService.sortMessage(user.getMessages());
+        model.addAttribute("userChannel", user);
+        model.addAttribute("subscriptionsCount", user.getSubscriptions().size());
+        model.addAttribute("subscribersCount", user.getSubscribers().size());
+        model.addAttribute("isSubscriber", user.getSubscribers().contains(currentUser));
+        model.addAttribute("messages", messages);
+        model.addAttribute("message", message);
+        model.addAttribute("isCurrentUser", currentUser.equals(user));
+
+        return "userMessages";
+    }
+
+    @PostMapping("/user-messages/{user}")
+    public String updateMessage(
+            @AuthenticationPrincipal User currentUser,
+            @PathVariable Long user,
+            @RequestParam("id") Message message,
+            @RequestParam("text") String text,
+            @RequestParam("tag") String tag,
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        if(message.getAuthor().equals(currentUser)){
+            if(!StringUtils.isEmpty(text)){
+                message.setText(text);
+            }
+            if(!StringUtils.isEmpty(tag)){
+                message.setTag(tag);
+            }
+            saveFile(message, file);
+            messageRepo.save(message);
+        }
+        return "redirect:/user-messages/" + user;
     }
 }

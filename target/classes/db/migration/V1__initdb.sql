@@ -14,6 +14,11 @@ create table user_role (
     user_id bigint not null,
     roles varchar(255));
 
+create table user_subscriptions (
+      subscriber_id bigint not null,
+      channel_id bigint not null,
+      primary key (channel_id, subscriber_id));
+
 create table usr (
     id bigint not null,
     activation_code varchar(255),
@@ -30,3 +35,11 @@ alter table message
 alter table user_role
     add constraint user_role_user_fk
     foreign key (user_id) references usr (id);
+
+alter table user_subscriptions
+    add constraint user_subscriptions_channel_id_fk
+    foreign key (channel_id) references usr (id);
+
+alter table user_subscriptions
+    add constraint user_subscriptions_subscriber_id_fk
+    foreign key (subscriber_id) references usr (id);
