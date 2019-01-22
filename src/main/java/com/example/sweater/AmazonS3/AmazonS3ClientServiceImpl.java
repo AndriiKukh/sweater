@@ -16,7 +16,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+/*import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -69,4 +69,4 @@ public class AmazonS3ClientServiceImpl implements AmazonS3ClientService {
             logger.error("error [" + ex.getMessage() + "] occurred while removing [" + fileName + "] ");
         }
     }
-}
+}*/

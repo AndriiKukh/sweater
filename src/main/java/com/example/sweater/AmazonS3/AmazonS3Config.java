@@ -1,4 +1,5 @@
 package com.example.sweater.AmazonS3;
+/*
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -49,3 +50,4 @@ public class AmazonS3Config {
             return awsS3Bucket;
         }
 }
+*/

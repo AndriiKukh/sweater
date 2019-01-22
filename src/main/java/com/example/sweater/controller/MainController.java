@@ -1,6 +1,6 @@
 package com.example.sweater.controller;
 
-import com.example.sweater.AmazonS3.AmazonS3ClientService;
+//import com.example.sweater.AmazonS3.AmazonS3ClientService;
 import com.example.sweater.domain.Message;
 import com.example.sweater.domain.User;
 import com.example.sweater.repos.MessageRepo;
@@ -35,8 +35,8 @@ public class MainController {
     private UserRepo userRepo;
     @Autowired
     private MessageService messageService;
-    @Autowired
-    private AmazonS3ClientService amazonS3ClientService;
+   /* @Autowired
+    private AmazonS3ClientService amazonS3ClientService;*/
 
     @GetMapping("/")
     public String greeting(){
